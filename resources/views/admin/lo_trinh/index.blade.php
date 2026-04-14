@@ -160,7 +160,6 @@ document.getElementById('routeModal').addEventListener('shown.bs.modal', functio
         }).addTo(map);
     }
 
-    // Force map to recalculate size after modal animation
     setTimeout(() => map.invalidateSize(), 200);
 });
 
@@ -171,6 +170,113 @@ document.getElementById('routeModal').addEventListener('hidden.bs.modal', functi
         markers = [];
     }
 });
+
+// Handle "Xem lộ trình" button click
+document.querySelectorAll('.view-route-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const driverId = this.dataset.driverId;
+        const driverName = this.dataset.driverName;
+        const date = this.dataset.date;
+
+        // Update modal title
+        document.getElementById('driverName').textContent = driverName;
+        document.getElementById('sidebarDriverName').textContent = driverName;
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('routeModal'));
+        modal.show();
+
+        // Fetch route data
+        fetch(`/admin/lo-trinh/tai-xe/${driverId}?date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                displayRouteData(data);
+            })
+            .catch(error => {
+                console.error('Error fetching route data:', error);
+                alert('Không thể tải dữ liệu lộ trình');
+            });
+    });
+});
+
+function displayRouteData(data) {
+    // Update sidebar info
+    document.getElementById('sidebarBienSo').textContent = data.driver.bien_so_xe || '-';
+    document.getElementById('sidebarTrangThai').textContent = data.driver.trang_thai;
+    document.getElementById('statTotal').textContent = data.statistics.total;
+    document.getElementById('statCompleted').textContent = data.statistics.completed;
+    document.getElementById('statPending').textContent = data.statistics.pending;
+    document.getElementById('statLastUpdate').textContent = data.driver.last_update || '-';
+
+    // Clear existing markers
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+
+    // Add order markers
+    const bounds = [];
+
+    data.orders.forEach(order => {
+        const lat = order.khach_hang.latitude;
+        const lng = order.khach_hang.longitude;
+
+        if (!lat || !lng) return;
+
+        bounds.push([lat, lng]);
+
+        // Determine marker color
+        let markerColor = 'orange'; // pending
+        if (order.trang_thai.id === 5) { // DA_GIAO
+            markerColor = 'green';
+        } else if (order.is_current) {
+            markerColor = 'blue';
+        }
+
+        const marker = L.circleMarker([lat, lng], {
+            radius: 8,
+            fillColor: markerColor,
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map);
+
+        marker.bindPopup(`
+            <strong>${order.ma_don}</strong><br>
+            ${order.khach_hang.ten_khach}<br>
+            ${order.khach_hang.dia_chi}<br>
+            <span class="badge bg-secondary">${order.trang_thai.ten_trang_thai}</span><br>
+            ${order.cod_amount ? 'COD: ' + order.cod_amount.toLocaleString() + ' đ' : ''}
+        `);
+
+        markers.push(marker);
+    });
+
+    // Add driver location marker if today
+    if (data.show_current_location && data.driver.current_lat && data.driver.current_lng) {
+        bounds.push([data.driver.current_lat, data.driver.current_lng]);
+
+        const driverMarker = L.marker([data.driver.current_lat, data.driver.current_lng], {
+            icon: L.divIcon({
+                className: 'driver-marker',
+                html: '<div style="background: red; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+                iconSize: [20, 20]
+            })
+        }).addTo(map);
+
+        driverMarker.bindPopup(`
+            <strong>${data.driver.ho_ten}</strong><br>
+            ${data.driver.bien_so_xe}<br>
+            Cập nhật: ${data.driver.last_update}
+        `);
+
+        markers.push(driverMarker);
+    }
+
+    // Fit map to bounds
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+}
 </script>
 @endpush
 @endsection
