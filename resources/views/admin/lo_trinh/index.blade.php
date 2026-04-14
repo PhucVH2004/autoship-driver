@@ -140,6 +140,43 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""/>
+<style>
+.driver-marker {
+    background: transparent;
+    border: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.badge.status-done {
+    background-color: #28a745;
+}
+
+.badge.status-delivering {
+    background-color: #007bff;
+}
+
+.badge.status-cancelled {
+    background-color: #6c757d;
+}
+
+#routeMap {
+    background-color: #f0f0f0;
+}
+
+.leaflet-popup-content {
+    margin: 8px 12px;
+    line-height: 1.6;
+}
+
+.leaflet-popup-content strong {
+    color: #333;
+    font-size: 14px;
+}
+</style>
 @endpush
 
 @push('scripts')
