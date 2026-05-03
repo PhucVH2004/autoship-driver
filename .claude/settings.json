@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"class .*Controller\" app/Http/Controllers/Admin/*.php)",
+      "Bash(php artisan:*)"
+    ]
+  }
+}

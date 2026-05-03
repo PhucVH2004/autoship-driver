@@ -136,7 +136,7 @@
     </div>
 </div>
 
-@push('styles')
+@push('extra_css')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""/>
@@ -179,7 +179,7 @@
 </style>
 @endpush
 
-@push('scripts')
+@push('extra_js')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
@@ -209,8 +209,11 @@ document.getElementById('routeModal').addEventListener('hidden.bs.modal', functi
 });
 
 // Handle "Xem lộ trình" button click
-document.querySelectorAll('.view-route-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+const buttons = document.querySelectorAll('.view-route-btn');
+
+buttons.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
         const driverId = this.dataset.driverId;
         const driverName = this.dataset.driverName;
         const date = this.dataset.date;
@@ -220,19 +223,29 @@ document.querySelectorAll('.view-route-btn').forEach(btn => {
         document.getElementById('sidebarDriverName').textContent = driverName;
 
         // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('routeModal'));
-        modal.show();
+        const modalEl = document.getElementById('routeModal');
+        const modal = new bootstrap.Modal(modalEl);
 
-        // Fetch route data
-        fetch(`/admin/lo-trinh/tai-xe/${driverId}?date=${date}`)
-            .then(response => response.json())
-            .then(data => {
-                displayRouteData(data);
-            })
-            .catch(error => {
-                console.error('Error fetching route data:', error);
-                alert('Không thể tải dữ liệu lộ trình');
-            });
+        // Wait for modal to be fully shown before fetching data
+        modalEl.addEventListener('shown.bs.modal', function fetchData() {
+            // Fetch route data
+            const url = `/admin/lo-trinh/tai-xe/${driverId}?date=${date}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    displayRouteData(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching route data:', error);
+                    alert('Không thể tải dữ liệu lộ trình: ' + error.message);
+                });
+
+            // Remove this listener after first use
+            modalEl.removeEventListener('shown.bs.modal', fetchData);
+        }, { once: true });
+
+        modal.show();
     });
 });
 

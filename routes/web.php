@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\MapController;
 use App\Http\Controllers\Admin\SystemFeeController;
 use App\Http\Controllers\Admin\LoTrinhController;
+use App\Http\Controllers\Admin\AdminSettlementController;
 use App\Http\Controllers\Driver\DriverController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\AddressController;
@@ -78,6 +79,10 @@ Route::middleware(['auth', 'role:Admin'])
 
     // ── Dashboard ─────────────────────────────────────────────────────────
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/doi-soat', [AdminSettlementController::class, 'index'])->name('settlement.index');
+    Route::post('/doi-soat/chot-ky', [AdminSettlementController::class, 'close'])->name('settlement.close');
+    Route::post('/doi-soat/chuyen-khoan', [AdminSettlementController::class, 'transfer'])->name('settlement.transfer');
+    Route::post('/doi-soat/xac-nhan-tai-xe-nop', [AdminSettlementController::class, 'confirmDriverRepayment'])->name('settlement.confirm_driver_repayment');
 
     // ── CRUD: Khách hàng ──────────────────────────────────────────────────
     Route::resource('khach-hang', KhachHangController::class)
@@ -132,8 +137,6 @@ Route::middleware(['auth', 'role:Admin'])
     Route::get('/map',      [MapController::class,     'index'])->name('map.index');
     Route::get('/lo-trinh', [LoTrinhController::class, 'index'])->name('lo_trinh.index');
     Route::get('/lo-trinh/tai-xe/{taiXeId}', [LoTrinhController::class, 'show'])->name('lo_trinh.show');
-    Route::post('/lo-trinh/{routeSession}/reorder-stop', [LoTrinhController::class, 'reorderStop'])->name('lo_trinh.reorder-stop');
-    Route::post('/lo-trinh/reassign-order', [LoTrinhController::class, 'reassignOrder'])->name('lo_trinh.reassign-order');
     Route::get('/api/drivers/location', [DriverLocationController::class, 'getLocations'])->name('api.drivers.location');
 
     // ── CRUD: Users & Roles (Admin only) ─────────────────────────────────

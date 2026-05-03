@@ -4,16 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DonHang;
-use App\Models\RouteSession;
 use App\Models\TaiXe;
 use App\Models\TrangThaiDonHang;
-use App\Services\AdminRouteDispatchService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class LoTrinhController extends Controller
 {
-    public function __construct(private AdminRouteDispatchService $dispatchService) {}
 
     /**
      * Danh sách tài xế với thống kê đơn hàng trong ngày
@@ -26,7 +22,17 @@ class LoTrinhController extends Controller
             ->with([
                 'donHangs' => fn ($query) => $query
                     ->with(['trangThai'])
-                    ->whereDate('created_at', $routeDate),
+                    ->where(function($q) use ($routeDate) {
+                        // Lấy đơn hàng đang xử lý (chưa hoàn thành) để luôn hiện trên lộ trình dù tạo ngày nào
+                        $q->whereNotIn('trang_thai_id', [
+                            TrangThaiDonHang::DA_GIAO,
+                            TrangThaiDonHang::HUY,
+                            TrangThaiDonHang::HOAN,
+                            TrangThaiDonHang::DA_HOAN,
+                        ])
+                        // Hoặc các đơn hàng đã được xử lý xong trong đúng ngày đang xem lộ trình
+                        ->orWhereDate('updated_at', $routeDate);
+                    }),
             ])
             ->orderBy('ho_ten')
             ->get()
@@ -72,7 +78,17 @@ class LoTrinhController extends Controller
         $orders = DonHang::query()
             ->with(['khachHang', 'trangThai'])
             ->where('tai_xe_id', $taiXeId)
-            ->whereDate('created_at', $date)
+            ->where(function($query) use ($date) {
+                // Lấy đơn đang xử lý
+                $query->whereNotIn('trang_thai_id', [
+                    TrangThaiDonHang::DA_GIAO,
+                    TrangThaiDonHang::HUY,
+                    TrangThaiDonHang::HOAN,
+                    TrangThaiDonHang::DA_HOAN,
+                ])
+                // Hoặc đơn đã xử lý cập nhật trong ngày
+                ->orWhereDate('updated_at', $date);
+            })
             ->orderByRaw("
                 CASE
                     WHEN trang_thai_id = ? THEN 1
